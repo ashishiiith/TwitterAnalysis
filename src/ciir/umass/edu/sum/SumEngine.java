@@ -23,8 +23,8 @@ public class SumEngine {
 		try {
 			
 			
-			//SumEngine se = new SumEngine(args[0]);
-			//se.extractNPs(args[1], args[2]);
+			SumEngine se = new SumEngine(args[0]);
+			se.extractNPs(args[1], args[2]);
 			
 		}
 		catch(Exception ex)
