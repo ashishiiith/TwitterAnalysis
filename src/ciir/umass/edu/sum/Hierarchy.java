@@ -9,7 +9,6 @@ import java.io.OutputStreamWriter;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.List;
 
@@ -17,7 +16,10 @@ import lemurproject.indri.DocumentVector;
 import lemurproject.indri.ScoredExtentResult;
 
 import ciir.umass.edu.qproc.KStemmer;
+import ciir.umass.edu.qproc.NPExtractor;
+import ciir.umass.edu.qproc.NounPhrase;
 import ciir.umass.edu.qproc.POSTagger;
+import ciir.umass.edu.qproc.Stopper;
 import ciir.umass.edu.retrieval.dts.LanguageModel;
 import ciir.umass.edu.retrieval.dts.Ranking;
 import ciir.umass.edu.retrieval.utils.DataSource;
@@ -59,21 +61,13 @@ public class Hierarchy {
 	//parameters
 	public static int minDocCount = 2;
 	public static int minCharCount = 2;
-	public static int windowSize = 1000;
+	public static int windowSize = 5;
 	public static int distToQueryTerm = 8;
 	public static boolean usePhrases = false;
-	public static HashSet<String> junkWords = null;
-	public static void loadJunkWordList()
-	{
-		String[] junks = new String[]{"http", "https", "www", "src", "html", "ly", "com", "bit", "tinyurl", "co"};
-		junkWords = new HashSet<String>();
-		for(int i=0;i<junks.length;i++)
-			junkWords.add(junks[i]);
-	}
-	public static boolean isJunk(String word)
-	{
-		return junkWords.contains(word);
-	}
+	public static boolean usePhrasesOnly = false;
+	public static boolean printRetDoc = false;
+	public static boolean printPhrase = false;
+	
 	
 	//local variables
 	private IndriSearchEngine se = null;
@@ -88,6 +82,7 @@ public class Hierarchy {
 	
 	private KStemmer st = new KStemmer();
 	private POSTagger tagger = new POSTagger();
+	private NPExtractor npe = null;
 	
 	/**
 	 * @param args
@@ -178,17 +173,18 @@ public class Hierarchy {
 	
 	public Hierarchy()
 	{
-		loadJunkWordList();
 	}
 	public Hierarchy(IndriSearchEngine se)
 	{
 		this.se = se;
-		loadJunkWordList();
+		npe = new NPExtractor(se);
 	}	
 	
 	public void estimate(String query, int topD) throws Exception
 	{
-		ScoredExtentResult[] r = se.runQuery(query, topD);
+		ScoredExtentResult[] r = se.runQuery(QueryProcessor.generateMRFQuery(query), topD);
+		//ScoredExtentResult[] r = se.runQuery("#1(" + query + ")", topD);
+		
 		//get docid and score
 		int size = Math.min(topD, r.length);
 		int[] docIDs = new int[size];
@@ -289,10 +285,8 @@ public class Hierarchy {
 		HashMap<String, Long> ngramFreq = new HashMap<String, Long>();
 		List<Integer> qTermPos = new ArrayList<Integer>();
 		for(int j=0;j<dv.positions.length;j++)
-		{
 			if(queryTerms.contains(dv.stems[dv.positions[j]]))
 				qTermPos.add(j);
-		}
 		
 		if(usePhrases)
 		{
@@ -302,15 +296,27 @@ public class Hierarchy {
 				String stem = dv.stems[dv.positions[i]];
 				content += stem + ((i==dv.positions.length-1)?"":" ");
 			}
-			List<String> nps = tagger.tag(content);
+			
+			if(printRetDoc)
+				System.out.println("tweet: " + content);
+			
+			//List<String> nps = tagger.tag(content);
+			List<NounPhrase> nps = npe.extract(content);
+			if(printPhrase)
+			{
+				for(int i=0;i<nps.size();i++)
+					System.out.println("phrase: " + nps.get(i).text);
+			}
+			
 			for(int i=0;i<nps.size();i++)
 			{
-				String np = nps.get(i);
-				add(np, ngramFreq);
-				int conceptStart = 0;
-				int conceptEnd = dv.positions.length-1;
-				updateMin(minDistanceToQT, np, minDist(qTermPos, conceptStart, conceptEnd));
-				dpv.add(np, new Markup(conceptStart, conceptEnd));
+				NounPhrase np = nps.get(i);
+				if(!usePhrasesOnly || np.text.indexOf(" ") != -1)
+				{
+					add(np.text, ngramFreq);
+					updateMin(minDistanceToQT, np.text, minDist(qTermPos, np.start, np.end));
+					dpv.add(np.text, new Markup(np.start, np.end));
+				}
 			}
 		}
 		else
@@ -318,7 +324,7 @@ public class Hierarchy {
 			for(int i=0;i<dv.positions.length;i++)
 			{
 				String stem = dv.stems[dv.positions[i]];
-				if(!QueryProcessor.isStop(stem) && !isJunk(stem))//in the full-stop word list
+				if(!Stopper.getInstance().isStop(stem))//in the full-stop word list
 				{
 					add(stem, ngramFreq);
 					updateMin(minDistanceToQT, stem, minDist(qTermPos, i, i));
@@ -399,7 +405,7 @@ public class Hierarchy {
 		for(String key : vocabIndex.keySet())
 		{
 			int dist = vocabMinDistanceToQT.get(key).intValue();
-			if(dist <= distToQueryTerm && (!usePhrases || key.indexOf(" ") != -1))
+			if(dist <= distToQueryTerm)
 			{
 				terms.add(vocabIndex.get(key).intValue());
 				map.put(key, terms.size()-1);

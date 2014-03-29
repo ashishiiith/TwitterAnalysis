@@ -11,6 +11,7 @@ import java.util.HashSet;
 import java.util.List;
 
 import ciir.umass.edu.qproc.KStemmer;
+import ciir.umass.edu.qproc.NPExtractor;
 import ciir.umass.edu.retrieval.utils.IndriSearchEngine;
 import ciir.umass.edu.retrieval.utils.QueryProcessor;
 import ciir.umass.edu.retrieval.utils.StringUtils;
@@ -52,7 +53,7 @@ public class TermExtractor {
 		
 		String index = "/mnt/nfs/work2/ashishjain/adobe/training_index";
 		try {
-			DSPApprox e = new DSPApprox();			
+			DSPApprox e = new DSPApprox();	
 			TermExtractor te = new TermExtractor(e, new IndriSearchEngine(index));
 			//te.run(queryFile, nTopicTerms, hDirectory, topicTermFile);			
 			
@@ -73,9 +74,23 @@ public class TermExtractor {
 					else if(s[0].compareToIgnoreCase("t") == 0)
 						topD = Integer.parseInt(s[1]);
 					else if(s[0].compareToIgnoreCase("p") == 0)
+					{
 						Hierarchy.usePhrases = true;
+						Hierarchy.usePhrasesOnly = false;
+					}
+					else if(s[0].compareToIgnoreCase("po") == 0)
+					{
+						Hierarchy.usePhrases = true;
+						Hierarchy.usePhrasesOnly = true;
+					}
 					else if(s[0].compareToIgnoreCase("u") == 0)
 						Hierarchy.usePhrases = false;
+					else if(s[0].compareToIgnoreCase("th") == 0)
+						NPExtractor.threshold = Double.parseDouble(s[1]);
+					else if(s[0].compareToIgnoreCase("pr") == 0)
+						Hierarchy.printRetDoc = true;
+					else if(s[0].compareToIgnoreCase("pp") == 0)
+						Hierarchy.printPhrase = true;
 				}
 				else
 				{				
