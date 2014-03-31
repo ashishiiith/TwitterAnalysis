@@ -19,6 +19,7 @@ public class POSTagger {
     public static ArrayList<String> tag(String tweet) {
 
     	ArrayList<String> nounList = new ArrayList<String>();
+        ArrayList<String> tagList = new ArrayList<String>();
         try {
 		Tagger tag=new Tagger();
             	tag.loadModel("model.20120919");
@@ -26,8 +27,6 @@ public class POSTagger {
         	for (Tagger.TaggedToken tags: t){
             	    System.out.println(tags.token+"\t"+tags.tag);
         	}
-		ArrayList<String> tagList = new ArrayList<String>();
-        	ArrayList<String> nounList = new ArrayList<String>();
         	boolean flag = false;
         	int index = -1;
 		for (Tagger.TaggedToken tags: t) {
