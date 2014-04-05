@@ -58,8 +58,10 @@ public class TermExtractor {
 			//te.run(queryFile, nTopicTerms, hDirectory, topicTermFile);			
 			
 			BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
-			int topD = 50;
+			int topD = 1000;
 			int topT = 20;
+			Hierarchy.usePhrases = true;
+			Hierarchy.usePhrasesOnly = true;
 			do {
 				System.out.print("query: ");
 				String text = br.readLine();

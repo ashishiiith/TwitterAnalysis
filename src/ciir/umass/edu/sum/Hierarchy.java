@@ -26,6 +26,7 @@ import ciir.umass.edu.retrieval.utils.DataSource;
 import ciir.umass.edu.retrieval.utils.IndriSearchEngine;
 import ciir.umass.edu.retrieval.utils.QueryProcessor;
 import ciir.umass.edu.utilities.SimpleMath;
+import ciir.umass.edu.sum.feature.FeatureExtractor;
 
 public class Hierarchy {
 
@@ -300,8 +301,19 @@ public class Hierarchy {
 			if(printRetDoc)
 				System.out.println("tweet: " + content);
 			
-			//List<String> nps = tagger.tag(content);
-			List<NounPhrase> nps = npe.extract(content);
+			//FeatureExtractor fe = new FeatureExtractor(se);
+			List<NounPhrase> nps = tagger.extract(content);
+			for(int i=0;i<nps.size();i++)
+			{
+				if(Stopper.getInstance().isStop(nps.get(i).text))
+				{
+					nps.remove(i);
+					i--;
+				}
+				//else
+					//fe.run(nps.get(i).text, 200);
+			}
+			//List<NounPhrase> nps = npe.extract(content);
 			if(printPhrase)
 			{
 				for(int i=0;i<nps.size();i++)

@@ -23,18 +23,26 @@ private IndriSearchEngine se = null;
 	 * 
 	 * @param query An input entity (noun phrase in the context of tweets).
 	 * @param topD
-	 * @throws Exception
 	 */
-	public void run(String query, int topD) throws Exception
+	public double[] run(String query, int topD)
 	{
-		ScoredExtentResult[] r = se.runQuery(query, topD);
+		double[] features = new double[1];
+		try {
+			ScoredExtentResult[] r = se.runQuery(query, topD);
 		
-		DiversityFeature df = new DiversityFeature();
-		double diversity = df.getValue(getDocumentVectors(r), getScores(r));
-		
-		//int[] docIDs = getDocumentIDs(r);
-		//double uniqueness = ((double)se.runQuery(query, docIDs, docIDs.length).length) / se.runQuery(query, docIDs, docIDs.length).length);
-		
+			DiversityFeature df = new DiversityFeature();
+			double diversity = df.getValue(getDocumentVectors(r), getScores(r));
+			features[0] = diversity;
+
+			//int[] docIDs = getDocumentIDs(r);
+			//double uniqueness = ((double)se.runQuery(query, docIDs, docIDs.length).length) / se.runQuery(query, docIDs, docIDs.length).length);
+			//System.out.println(query + "\t" + diversity);
+		}
+		catch(Exception ex)
+		{
+			ex.printStackTrace();
+		}
+		return features;
 	}
 	
 	protected int[] getDocumentIDs(ScoredExtentResult[] r) throws Exception

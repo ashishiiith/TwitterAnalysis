@@ -15,7 +15,8 @@ import ciir.umass.edu.utilities.Sorter;
 public class DiversityFeature {
 	
 	protected int topT = -1;//use all terms to form the word vector
-	protected double maxSimAllowed = 0.6;
+	protected double maxSimAllowed = 0.9;	
+	protected double minRelAllowed = 0.15;
 	protected double lambda = 0.5;
 	
 	protected static double TINY = -1000000000;
@@ -37,30 +38,38 @@ public class DiversityFeature {
 		
 		List<Integer> R = new ArrayList<Integer>();//the initial ranking
 		List<Integer> S = new ArrayList<Integer>();//the diverse ranking
+		
+		if(dvs.length == 0 || scores[0] < minRelAllowed)
+			return 0;
+		
 		S.add(0);
-		for(int i=1;i<dvs.length;i++)
+		for(int i=1;i<dvs.length && scores[i] >= minRelAllowed;i++)
 			R.add(i);		
 		
 		//start the greedy procedure
 		double sim = 0.0;
 		double relevance = 0.0;
+		//System.out.println("START...");
 		while(R.size() > 0)
 		{
 			double maxDiverse = -1.0;
-			int which = -1;
+			double maxSim = -1.0;
+			int which = -1;			
 			for(int i=0;i<R.size();i++)
 			{
 				relevance = scores[R.get(i)];
 				sim = similarity(R.get(i), S, lms);
-				if(sim > maxSimAllowed)
-					break;
 				double score = lambda * relevance - (1.0 - lambda) * sim;
 				if(maxDiverse < score)
 				{
 					maxDiverse = score;
 					which = i;
+					if(sim > maxSim)
+						maxSim = sim;
 				}
 			}
+			if(which == -1 || maxSim > maxSimAllowed)
+				break;
 			//found the best document
 			S.add(R.get(which));
 			R.remove(which);
